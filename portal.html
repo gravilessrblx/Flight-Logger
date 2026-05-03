@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graviless — Flight Logger</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-image: url("./BG/2.jpg");
+        --bg-color: #0d0f14;
+        --bg-overlay: rgba(13, 15, 20, 0.72);
+        --surface: rgba(255, 255, 255, 0.04);
+        --surface-solid: #161820;
+        --surface2: rgba(255, 255, 255, 0.07);
+        --border: rgba(255, 255, 255, 0.08);
+        --border-hover: rgba(255, 255, 255, 0.16);
+        --accent: #6366f1;
+        --accent-light: #818cf8;
+        --accent-glow: rgba(99, 102, 241, 0.25);
+        --green: #10b981;
+        --green-glow: rgba(16, 185, 129, 0.2);
+        --red: #f43f5e;
+        --yellow: #f59e0b;
+        --purple: #8b5cf6;
+        --text: #f1f5f9;
+        --text-2: #94a3b8;
+        --text-3: #475569;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --sans: "Inter", sans-serif;
+        --mono: "JetBrains Mono", monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: var(--sans);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-color: #0a0c14;
+        background-image: var(--bg-image);
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        z-index: -2;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 10, 18, 0.45);
+        z-index: -1;
+      }
+
+      .noise {
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      #loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(13, 15, 20, 0.9);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 300;
+        backdrop-filter: blur(8px);
+      }
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── LOGIN ── */
+      #login-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: rgba(22, 24, 32, 0.85);
+        backdrop-filter: blur(24px);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 36px;
+        box-shadow:
+          0 32px 80px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      }
+
+      .login-icon {
+        width: 52px;
+        height: 52px;
+        background: linear-gradient(135deg, var(--accent), var(--purple));
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 24px var(--accent-glow);
+      }
+      .login-title {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+        line-height: 1.2;
+      }
+      .login-title span {
+        color: var(--accent-light);
+      }
+      .login-sub {
+        font-size: 13.5px;
+        color: var(--text-2);
+        margin-bottom: 32px;
+        font-weight: 400;
+        line-height: 1.5;
+      }
+
+      .input-wrap {
+        position: relative;
+        margin-bottom: 14px;
+      }
+      .input-wrap label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--text-2);
+        margin-bottom: 8px;
+      }
+      .input-wrap input,
+      .input-wrap select,
+      .input-wrap textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        padding: 12px 16px;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          background 0.2s,
+          box-shadow 0.2s;
+        appearance: none;
+      }
+      .input-wrap input:focus,
+      .input-wrap select:focus,
+      .input-wrap textarea:focus {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.08);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+      .input-wrap input::placeholder {
+        color: var(--text-3);
+      }
+      .input-wrap select {
+        cursor: pointer;
+      }
+      .input-wrap select option {
+        background: #1e2030;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--sans);
+        font-size: 13.5px;
+        font-weight: 600;
+        padding: 12px 22px;
+        border-radius: var(--radius-sm);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--purple));
+        color: #fff;
+        box-shadow: 0 4px 16px var(--accent-glow);
+      }
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px var(--accent-glow);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+      .btn-ghost {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-hover);
+      }
+      .btn-green {
+        background: linear-gradient(135deg, var(--green), #059669);
+        color: #fff;
+        box-shadow: 0 4px 16px var(--green-glow);
+      }
+      .btn-green:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px var(--green-glow);
+      }
+      .btn-danger {
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--red);
+        border: 1px solid rgba(244, 63, 94, 0.2);
+        font-size: 12px;
+        padding: 8px 14px;
+      }
+      .btn-danger:hover {
+        background: rgba(244, 63, 94, 0.18);
+      }
+      .btn-sm {
+        padding: 8px 16px;
+        font-size: 12.5px;
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+      .btn-full {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .host-badge {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        margin-top: 12px;
+        display: none;
+      }
+      .host-badge .hb-label {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 4px;
+      }
+      .host-badge .hb-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent-light);
+      }
+
+      .login-error {
+        background: rgba(244, 63, 94, 0.1);
+        border: 1px solid rgba(244, 63, 94, 0.25);
+        border-radius: var(--radius-sm);
+        color: var(--red);
+        padding: 12px 16px;
+        font-size: 13px;
+        margin-top: 12px;
+        display: none;
+      }
+
+      /* ── APP ── */
+      #app {
+        display: none;
+        min-height: 100vh;
+        position: relative;
+        z-index: 1;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        height: 62px;
+        background: rgba(13, 15, 20, 0.75);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+      }
+      .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+      .topbar-brand .brand-icon {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, var(--accent), var(--purple));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+      .topbar-brand .brand-sub {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-3);
+        letter-spacing: 0;
+      }
+      .host-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 999px;
+        padding: 5px 14px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--green);
+      }
+      .host-chip::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: var(--green);
+        border-radius: 50%;
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-pills {
+        display: flex;
+        gap: 4px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 4px;
+      }
+      .nav-tab {
+        font-size: 12.5px;
+        font-weight: 500;
+        padding: 7px 18px;
+        border-radius: 7px;
+        border: none;
+        background: none;
+        color: var(--text-2);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .nav-tab.active {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+      }
+      .nav-tab:hover:not(.active) {
+        color: var(--text);
+      }
+
+      .page {
+        display: none;
+        padding: 36px 28px;
+        max-width: 1060px;
+        margin: 0 auto;
+      }
+      .page.active {
+        display: block;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+      }
+      .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .page-title .page-eyebrow {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--accent-light);
+        margin-bottom: 6px;
+      }
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 999px;
+        padding: 5px 14px;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--green);
+      }
+      .status-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: var(--green);
+        border-radius: 50%;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 20px;
+        backdrop-filter: blur(12px);
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .card-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--surface2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+      }
+      .card-label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: -0.1px;
+      }
+      .card-label span {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-2);
+        margin-left: 6px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .auto-field {
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .auto-field .af-badge {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        background: var(--accent);
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .auto-field .af-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--accent-light);
+      }
+      .field-hint {
+        font-size: 11.5px;
+        color: var(--text-3);
+        margin-top: 6px;
+      }
+
+      .staff-row {
+        background: rgba(139, 92, 246, 0.06);
+        border: 1px solid rgba(139, 92, 246, 0.15);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+        margin-bottom: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 120px auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .staff-row-header {
+        grid-column: 1/-1;
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--purple);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .staff-row-header::before {
+        content: "";
+        width: 16px;
+        height: 1px;
+        background: var(--purple);
+        opacity: 0.4;
+      }
+
+      .add-crew-btn {
+        width: 100%;
+        background: rgba(99, 102, 241, 0.05);
+        border: 1px dashed rgba(99, 102, 241, 0.25);
+        border-radius: var(--radius-sm);
+        padding: 13px;
+        color: var(--accent-light);
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+      .add-crew-btn:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+
+      .submit-bar {
+        background: rgba(16, 185, 129, 0.06);
+        border: 1px solid rgba(16, 185, 129, 0.15);
+        border-radius: var(--radius);
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .submit-bar-info {
+        font-size: 13px;
+      }
+      .submit-bar-info strong {
+        display: block;
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .submit-bar-info span {
+        color: var(--text-2);
+      }
+
+      .log-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 22px;
+        margin-bottom: 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 20px;
+        align-items: center;
+        transition: border-color 0.2s;
+      }
+      .log-card:hover {
+        border-color: var(--border-hover);
+      }
+      .log-fn {
+        background: var(--accent-glow);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-family: var(--mono);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent-light);
+        white-space: nowrap;
+      }
+      .log-info {
+        min-width: 0;
+      }
+      .log-host {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .log-crew {
+        font-size: 12px;
+        color: var(--text-2);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .log-dt {
+        font-size: 11px;
+        color: var(--text-3);
+        margin-top: 4px;
+      }
+      .log-miles-box {
+        text-align: right;
+        white-space: nowrap;
+      }
+      .log-miles-num {
+        font-family: var(--mono);
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--yellow);
+      }
+      .log-miles-label {
+        font-size: 10.5px;
+        color: var(--text-3);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 80px 40px;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
+        color: var(--text-3);
+        font-size: 13px;
+      }
+      .empty-state .e-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+        opacity: 0.3;
+      }
+
+      .admin-page {
+        display: none;
+        padding: 36px 28px;
+        max-width: 1060px;
+        margin: 0 auto;
+      }
+      .admin-page.active {
+        display: block;
+      }
+
+      .settings-group {
+        margin-bottom: 32px;
+      }
+      .settings-group-title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .settings-group-title::before {
+        content: "";
+        width: 3px;
+        height: 12px;
+        background: var(--accent);
+        border-radius: 2px;
+      }
+
+      .config-block {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 12px;
+      }
+      .config-block-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-2);
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      .host-list-row {
+        display: grid;
+        grid-template-columns: 120px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .host-code-pill {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent-light);
+        background: var(--accent-glow);
+        padding: 3px 9px;
+        border-radius: 5px;
+        letter-spacing: 0.5px;
+      }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 20px 0;
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        background: rgba(22, 24, 32, 0.95);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        font-size: 13px;
+        z-index: 999;
+        transform: translateY(20px) scale(0.96);
+        opacity: 0;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-width: 340px;
+        min-width: 240px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+      }
+      .toast.show {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      .toast-bar {
+        width: 32px;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--green);
+        margin-bottom: 10px;
+      }
+      .toast.error .toast-bar {
+        background: var(--red);
+      }
+      .toast-title {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+        color: var(--text);
+      }
+      .toast-msg {
+        color: var(--text-2);
+        font-size: 12.5px;
+      }
+
+      @media (max-width: 700px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .staff-row {
+          grid-template-columns: 1fr;
+        }
+        .topbar-right .nav-pills {
+          display: none;
+        }
+        .page,
+        .admin-page {
+          padding: 20px 16px;
+        }
+        .log-card {
+          grid-template-columns: 1fr auto;
+        }
+        .log-fn {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="noise"></div>
+
+    <div
+      id="loading-overlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(13, 15, 20, 0.9);
+        align-items: center;
+        justify-content: center;
+        z-index: 300;
+        backdrop-filter: blur(8px);
+      "
+    >
+      <div class="spinner"></div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-screen">
+      <div class="login-card">
+        <div class="login-icon">✈</div>
+        <div class="login-title">Graviless <span>Staff Portal</span></div>
+        <p class="login-sub">
+          Flight logging system. Enter your personal access code to continue.
+        </p>
+        <div class="input-wrap">
+          <label>Access Code</label>
+          <input
+            type="password"
+            id="login-password"
+            placeholder="Enter your code..."
+            oninput="debouncePreview(this.value)"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <button
+          class="btn btn-primary btn-full"
+          id="login-btn"
+          onclick="doLogin()"
+        >
+          Sign In →
+        </button>
+        <div class="host-badge" id="host-preview">
+          <div class="hb-label">Logging in as</div>
+          <div class="hb-name" id="host-preview-name">—</div>
+        </div>
+        <div class="login-error" id="login-error">
+          Invalid access code. Please try again.
+        </div>
+      </div>
+    </div>
+
+    <!-- APP -->
+    <div id="app">
+      <div class="topbar">
+        <div class="topbar-brand">
+          <div class="brand-icon">✈</div>
+          <div>
+            <div>Graviless</div>
+            <div class="brand-sub">Flight Logger</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="host-chip" id="topbar-host">Host: —</div>
+          <div class="nav-pills">
+            <button class="nav-tab active" onclick="switchTab('log', this)">
+              New Log
+            </button>
+            <button class="nav-tab" onclick="switchTab('history', this)">
+              History
+            </button>
+            <button
+              class="nav-tab"
+              id="admin-tab"
+              style="display: none"
+              onclick="switchTab('admin', this)"
+            >
+              Admin ⚙
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW LOG PAGE -->
+      <div class="page active" id="page-log">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">New Entry</div>
+            <div class="page-title">Log a Flight</div>
+          </div>
+          <div class="status-badge">Operational</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">🛫</div>
+            <div class="card-label">Flight Information</div>
+          </div>
+          <div class="form-grid">
+            <div class="input-wrap">
+              <label>Flight Number</label>
+              <input type="text" id="f-flightnum" placeholder="e.g. TG401" />
+            </div>
+            <div class="input-wrap">
+              <label>Flight Host</label>
+              <div class="auto-field">
+                <span class="af-badge">AUTO</span>
+                <span class="af-name" id="display-host">—</span>
+              </div>
+              <div class="field-hint">Resolved from your access code</div>
+            </div>
+            <div class="input-wrap">
+              <label>Total Miles Given</label>
+              <input type="number" id="f-miles" placeholder="0" min="0" />
+            </div>
+            <div class="input-wrap">
+              <label>Flight Occured (Make sure it is in UTC time)</label>
+              <input type="datetime-local" id="f-datetime" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">👥</div>
+            <div class="card-label">
+              Staff Onboard <span>Add each crew member below</span>
+            </div>
+          </div>
+          <div id="staff-container"></div>
+          <button class="add-crew-btn" onclick="addStaffRow()">
+            <span style="font-size: 18px; line-height: 1">+</span> Add Crew
+            Member
+          </button>
+        </div>
+
+        <div class="submit-bar">
+          <div class="submit-bar-info">
+            <strong>Ready to submit?</strong>
+            <span>Sent securely via Cloudflare → Sheets &amp; Discord</span>
+          </div>
+          <button
+            class="btn btn-green"
+            id="submit-btn"
+            onclick="submitFlight()"
+          >
+            Submit Flight Log ✓
+          </button>
+        </div>
+      </div>
+
+      <div class="page" id="page-history">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Records</div>
+            <div class="page-title">Flight History</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="renderHistory()">
+            ↻ Refresh
+          </button>
+        </div>
+        <div id="history-list"></div>
+      </div>
+
+      <div class="admin-page" id="page-admin">
+        <div class="page-header">
+          <div>
+            <div class="page-eyebrow">Admin Only</div>
+            <div class="page-title">Host Management</div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Host Access Codes</div>
+          <div
+            class="config-block"
+            style="border-left: 3px solid var(--accent)"
+          >
+            <div class="config-block-label">
+              Stored in Cloudflare KV — never editable by staff
+            </div>
+            <div id="host-codes-list">
+              <div style="font-size: 12.5px; color: var(--text-3)">
+                Loading from Cloudflare...
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 130px 1fr auto;
+                gap: 12px;
+                align-items: end;
+              "
+            >
+              <div class="input-wrap" style="margin: 0">
+                <label>Code</label>
+                <input
+                  type="text"
+                  id="s-newcode"
+                  placeholder="HOST004"
+                  style="text-transform: uppercase"
+                />
+              </div>
+              <div class="input-wrap" style="margin: 0">
+                <label>Host Name</label>
+                <input
+                  type="text"
+                  id="s-newcodename"
+                  placeholder="e.g. Captain Alex"
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 11px;
+                    display: block;
+                    margin-bottom: 8px;
+                    opacity: 0;
+                  "
+                  >_</label
+                >
+                <button class="btn btn-ghost btn-sm" onclick="adminAddCode()">
+                  + Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Change My Access Code</div>
+          <div class="card">
+            <div class="form-grid">
+              <div class="input-wrap">
+                <label>New Code</label>
+                <input
+                  type="password"
+                  id="s-newpass"
+                  placeholder="New access code"
+                />
+              </div>
+              <div class="input-wrap">
+                <label>Confirm</label>
+                <input
+                  type="password"
+                  id="s-confirmpass"
+                  placeholder="Confirm"
+                />
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="changeMyCode()">
+              Update Code
+            </button>
+          </div>
+        </div>
+
+        <!-- Info box -->
+        <div class="settings-group">
+          <div class="settings-group-title">What's Locked in Cloudflare</div>
+          <div class="config-block" style="border-left: 3px solid var(--green)">
+            <div
+              style="font-size: 13px; color: var(--text-2); line-height: 1.9"
+            >
+              The following are set
+              <strong style="color: var(--text)">only</strong> in Cloudflare
+              Dashboard → Worker → Settings → Variables and
+              <strong style="color: var(--text)"
+                >cannot be changed from this UI</strong
+              >:<br /><br />
+              <code
+                style="
+                  color: var(--yellow);
+                  background: rgba(255, 255, 255, 0.06);
+                  padding: 2px 7px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                "
+                >DISCORD_FORMAT</code
+              >
+              — your Discord message template<br />
+              <code
+                style="
+                  color: var(--yellow);
+                  background: rgba(255, 255, 255, 0.06);
+                  padding: 2px 7px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                "
+                >ROLES</code
+              >
+              — JSON array of roles &amp; pay rates<br />
+              <code
+                style="
+                  color: var(--yellow);
+                  background: rgba(255, 255, 255, 0.06);
+                  padding: 2px 7px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                "
+                >DISCORD_WEBHOOK</code
+              >
+              — webhook URL<br />
+              <code
+                style="
+                  color: var(--yellow);
+                  background: rgba(255, 255, 255, 0.06);
+                  padding: 2px 7px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                "
+                >ADMIN_CODE</code
+              >
+              — your admin password
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast">
+      <div class="toast-bar"></div>
+      <div class="toast-title" id="toast-title">Success</div>
+      <div class="toast-msg" id="toast-msg"></div>
+    </div>
+
+    <script>
+      const WORKER_URL = "https://crewops-api.gravilessholder.workers.dev";
+
+      const S = {
+        roles: [],
+        staff: JSON.parse(localStorage.getItem("cop_staff") || "[]"),
+        logs: JSON.parse(localStorage.getItem("cop_logs") || "[]"),
+        currentCode: "",
+        currentHost: "",
+        isAdmin: false,
+        staffRows: [],
+      };
+
+      // ── LOGIN PREVIEW ──
+      let previewTimer = null;
+      function debouncePreview(val) {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(() => previewHost(val), 450);
+      }
+      async function previewHost(val) {
+        const code = val.trim();
+        if (code.length < 3) {
+          document.getElementById("host-preview").style.display = "none";
+          return;
+        }
+        try {
+          const res = await wFetch("/login", { code });
+          if (res.ok) {
+            document.getElementById("host-preview").style.display = "block";
+            document.getElementById("host-preview-name").textContent =
+              res.hostName;
+          } else {
+            document.getElementById("host-preview").style.display = "none";
+          }
+        } catch {
+          document.getElementById("host-preview").style.display = "none";
+        }
+      }
+
+      // ── LOGIN ──
+      async function doLogin() {
+        const code = document.getElementById("login-password").value.trim();
+        if (!code) return;
+        const btn = document.getElementById("login-btn");
+        btn.disabled = true;
+        btn.textContent = "Checking...";
+        setLoading(true);
+        try {
+          const res = await wFetch("/login", { code });
+          if (res.ok) {
+            S.currentCode = code;
+            S.currentHost = res.hostName;
+            S.isAdmin = res.isAdmin || false;
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("app").style.display = "block";
+            initApp();
+          } else {
+            document.getElementById("login-error").style.display = "block";
+            document.getElementById("login-password").value = "";
+            setTimeout(
+              () =>
+                (document.getElementById("login-error").style.display = "none"),
+              3500,
+            );
+          }
+        } catch {
+          showToast(
+            "Connection Error",
+            "Could not reach the server. Check WORKER_URL.",
+            true,
+          );
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Sign In →";
+          setLoading(false);
+        }
+      }
+
+      async function initApp() {
+        document.getElementById("topbar-host").textContent =
+          "Host: " + S.currentHost;
+        document.getElementById("display-host").textContent = S.currentHost;
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById("f-datetime").value = now
+          .toISOString()
+          .slice(0, 16);
+
+        if (S.isAdmin) {
+          document.getElementById("admin-tab").style.display = "block";
+        }
+
+        await fetchRoles();
+        await fetchStaff();
+        renderHistory();
+      }
+
+      async function fetchRoles() {
+        try {
+          const res = await fetch(WORKER_URL + "/roles");
+          const data = await res.json();
+          if (data.roles?.length) S.roles = data.roles;
+        } catch {}
+      }
+
+      async function fetchStaff() {
+        try {
+          const res = await fetch(WORKER_URL + "/staff");
+          const data = await res.json();
+          if (data.staff?.length) {
+            S.staff = [...new Set([...data.staff, ...S.staff])];
+            localStorage.setItem("cop_staff", JSON.stringify(S.staff));
+          }
+        } catch {}
+      }
+
+      function switchTab(tab, btn) {
+        document
+          .querySelectorAll(".nav-tab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".admin-page")
+          .forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+
+        if (tab === "admin") {
+          document.getElementById("page-admin").classList.add("active");
+          if (S.isAdmin) loadAdminCodes();
+        } else {
+          document.getElementById("page-" + tab).classList.add("active");
+        }
+        if (tab === "history") renderHistory();
+      }
+
+      let rowId = 0;
+      function addStaffRow() {
+        rowId++;
+        const id = rowId;
+        const div = document.createElement("div");
+        div.className = "staff-row";
+        div.id = "sr-" + id;
+        div.innerHTML = `
+          <div class="staff-row-header">Crew Member #${id}</div>
+          <div class="input-wrap" style="margin:0">
+            <label>Name</label>
+            <select id="sr-name-${id}">
+              <option value="">— Select Staff —</option>
+              ${S.staff.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="input-wrap" style="margin:0">
+            <label>Role</label>
+            <select id="sr-role-${id}">
+              <option value="">— Select Role —</option>
+              ${S.roles.map((r) => `<option value="${esc(r.name)}" data-pay="${r.pay}">${esc(r.name)} · R$${r.pay}</option>`).join("")}
+            </select>
+          </div>
+          <div class="input-wrap" style="margin:0">
+            <label>Bonus (R$)</label>
+            <input type="number" id="sr-bonus-${id}" value="0" min="0" placeholder="0">
+          </div>
+          <div>
+            <label style="font-size:11px;display:block;margin-bottom:8px;opacity:0">_</label>
+            <button class="btn btn-danger" onclick="removeRow(${id})">Remove</button>
+          </div>`;
+        document.getElementById("staff-container").appendChild(div);
+        S.staffRows.push(id);
+      }
+
+      function removeRow(id) {
+        document.getElementById("sr-" + id)?.remove();
+        S.staffRows = S.staffRows.filter((x) => x !== id);
+      }
+
+      // ── SUBMIT ──
+      async function submitFlight() {
+        const flightNum = document.getElementById("f-flightnum").value.trim();
+        const miles = document.getElementById("f-miles").value;
+        const datetime = document.getElementById("f-datetime").value;
+
+        if (!flightNum || !miles || !datetime) {
+          showToast(
+            "Missing Fields",
+            "Fill in Flight Number, Miles, and Date/Time.",
+            true,
+          );
+          return;
+        }
+
+        const staff = [];
+        for (const id of S.staffRows) {
+          const name = document.getElementById("sr-name-" + id)?.value;
+          const roleEl = document.getElementById("sr-role-" + id);
+          const role = roleEl?.value;
+          const bonus =
+            parseFloat(document.getElementById("sr-bonus-" + id)?.value) || 0;
+          const basePay =
+            parseFloat(roleEl?.selectedOptions[0]?.dataset?.pay) || 0;
+          if (name && role)
+            staff.push({
+              name,
+              role,
+              bonus,
+              basePay,
+              totalPay: basePay + bonus,
+            });
+        }
+
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true;
+        btn.textContent = "Submitting...";
+        setLoading(true);
+
+        try {
+          const res = await wFetch("/submit", {
+            code: S.currentCode,
+            flightNum,
+            miles,
+            datetime,
+            staff,
+          });
+
+          if (res.ok) {
+            S.logs.unshift({
+              flightNum,
+              host: res.host || S.currentHost,
+              miles,
+              datetime,
+              staff,
+              loggedAt: new Date().toISOString(),
+            });
+            localStorage.setItem("cop_logs", JSON.stringify(S.logs));
+            const warn = res.errors ? " (some integrations had issues)" : "";
+            showToast(
+              "Flight Logged ✈",
+              `Flight ${flightNum} submitted!${warn}`,
+            );
+            document.getElementById("f-flightnum").value = "";
+            document.getElementById("f-miles").value = "";
+            document.getElementById("staff-container").innerHTML = "";
+            S.staffRows = [];
+          } else {
+            showToast("Error", res.error || "Submission failed.", true);
+          }
+        } catch (e) {
+          showToast("Network Error", e.message, true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Submit Flight Log ✓";
+          setLoading(false);
+        }
+      }
+
+      // ── HISTORY ──
+      function renderHistory() {
+        const el = document.getElementById("history-list");
+        if (!S.logs.length) {
+          el.innerHTML =
+            '<div class="empty-state"><div class="e-icon">✈</div>No flights logged yet.<br>Submit your first flight to see it here.</div>';
+          return;
+        }
+        el.innerHTML = S.logs
+          .map(
+            (l) => `
+          <div class="log-card">
+            <div class="log-fn">${esc(l.flightNum)}</div>
+            <div class="log-info">
+              <div class="log-host">${esc(l.host)}</div>
+              <div class="log-crew">${(l.staff || []).map((s) => esc(s.name)).join(", ") || "No crew recorded"}</div>
+              <div class="log-dt">${fmtDT(l.datetime)}</div>
+            </div>
+            <div class="log-miles-box">
+              <div class="log-miles-num">${Number(l.miles).toLocaleString()}</div>
+              <div class="log-miles-label">Miles Given</div>
+            </div>
+          </div>`,
+          )
+          .join("");
+      }
+
+      async function loadAdminCodes() {
+        const el = document.getElementById("host-codes-list");
+        el.innerHTML =
+          '<div style="font-size:12.5px;color:var(--text-3)">Loading...</div>';
+        try {
+          const res = await wFetch("/admin/listcodes", {
+            adminCode: S.currentCode,
+          });
+          if (!res.ok) {
+            el.innerHTML =
+              '<div style="color:var(--red);font-size:12.5px">Failed to load.</div>';
+            return;
+          }
+          el.innerHTML =
+            Object.entries(res.codes || {})
+              .map(
+                ([code, name]) => `
+            <div class="host-list-row">
+              <span class="host-code-pill">${esc(code)}</span>
+              <span>${esc(name)}</span>
+              <button class="btn btn-danger" onclick="adminRemoveCode('${esc(code)}')">Remove</button>
+            </div>`,
+              )
+              .join("") ||
+            '<div style="font-size:12.5px;color:var(--text-3)">No codes found.</div>';
+        } catch {
+          el.innerHTML =
+            '<div style="color:var(--red);font-size:12.5px">Connection error.</div>';
+        }
+      }
+
+      async function adminAddCode() {
+        const code = document
+          .getElementById("s-newcode")
+          .value.trim()
+          .toUpperCase();
+        const name = document.getElementById("s-newcodename").value.trim();
+        if (!code || !name) {
+          showToast("Error", "Enter both code and name.", true);
+          return;
+        }
+        const res = await wFetch("/admin/addcode", {
+          adminCode: S.currentCode,
+          newCode: code,
+          hostName: name,
+        });
+        if (res.ok) {
+          document.getElementById("s-newcode").value = "";
+          document.getElementById("s-newcodename").value = "";
+          showToast("Code Added", `${code} → ${name}`);
+          loadAdminCodes();
+        } else showToast("Error", res.error || "Failed.", true);
+      }
+
+      async function adminRemoveCode(code) {
+        if (!confirm(`Remove code: ${code}?`)) return;
+        const res = await wFetch("/admin/removecode", {
+          adminCode: S.currentCode,
+          removeCode: code,
+        });
+        if (res.ok) {
+          showToast("Removed", `${code} deleted.`);
+          loadAdminCodes();
+        } else showToast("Error", res.error || "Failed.", true);
+      }
+
+      async function changeMyCode() {
+        const np = document
+          .getElementById("s-newpass")
+          .value.trim()
+          .toUpperCase();
+        const cp = document
+          .getElementById("s-confirmpass")
+          .value.trim()
+          .toUpperCase();
+        if (!np || np !== cp) {
+          showToast(
+            "Error",
+            np ? "Codes do not match." : "Enter a new code.",
+            true,
+          );
+          return;
+        }
+        const res = await wFetch("/admin/changecode", {
+          oldCode: S.currentCode,
+          newCode: np,
+        });
+        if (res.ok) {
+          S.currentCode = np;
+          document.getElementById("s-newpass").value = "";
+          document.getElementById("s-confirmpass").value = "";
+          showToast("Code Updated", `New code: ${np}`);
+        } else showToast("Error", res.error || "Failed.", true);
+      }
+
+      async function wFetch(path, body) {
+        const res = await fetch(WORKER_URL + path, {
+          method: body ? "POST" : "GET",
+          headers: body ? { "Content-Type": "application/json" } : {},
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        return res.json();
+      }
+
+      function setLoading(on) {
+        document.getElementById("loading-overlay").style.display = on
+          ? "flex"
+          : "none";
+      }
+
+      function fmtDT(dt) {
+        if (!dt) return "—";
+        try {
+          return new Date(dt).toLocaleString("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+        } catch {
+          return dt;
+        }
+      }
+
+      function esc(s) {
+        return String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function showToast(title, msg, isError = false) {
+        const t = document.getElementById("toast");
+        document.getElementById("toast-title").textContent = title;
+        document.getElementById("toast-msg").textContent = msg;
+        t.className = "toast" + (isError ? " error" : "");
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 5000);
+      }
+    </script>
+  </body>
+</html>
